@@ -1,0 +1,848 @@
+---
+title: Finite-sample bias-correction factors for the median absolute deviation based on the Harrell-Davis quantile estimator and its trimmed modification
+author: |
+  Andrey Akinshin  
+  Huawei Research, andrey.akinshin@gmail.com
+abstract: |
+  The median absolute deviation is a widely used robust measure of statistical dispersion.
+  Using a scale constant, we can use it as an asymptotically consistent estimator for the standard deviation under normality.
+  For finite samples, the scale constant should be corrected in order to obtain an unbiased estimator.
+  The bias-correction factor depends on the sample size and the median estimator.
+  When we use the traditional sample median, the factor values are well known,
+    but this approach does not provide optimal statistical efficiency.
+  In this paper, we present the bias-correction factors for the median absolute deviation
+    based on the Harrell-Davis quantile estimator and its trimmed modification
+    which allow us to achieve better statistical efficiency of the standard deviation estimations.
+  The obtained estimators are especially useful for samples with a small number of elements.
+
+  **Keywords:** median absolute deviation, bias correction, Harrell-Davis quantile estimator, robustness.
+bibliography: references.bib
+biblio-style: alphabetic
+biblatexoptions: [sorting=nty]
+link-citations: true
+output:
+  bookdown::pdf_document2:
+    citation_package: biblatex
+    keep_tex: true
+    extra_dependencies: ["amsmath", "float"]
+    toc: false
+    number_sections: true
+    includes:
+      in_header: "preamble.tex"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, fig.align = "center", fig.pos = "ht!")
+source("utils.R", local = knitr::knit_global())
+source("helpers.R", local = knitr::knit_global())
+source("simulation-efficiency.R", local = knitr::knit_global())
+source("simulation-sensitivity.R", local = knitr::knit_global())
+```
+
+# Introduction
+
+We consider the median absolute deviation as a robust alternative to the standard deviation.
+In order to make it asymptotically consistent with the standard deviation under the normal distribution,
+  the median absolute deviation should be multiplied by a scale constant $C_\infty \approx 1.4826$.
+This approach works well in practice when the sample size $n$ is large.
+However, when the sample size is small, the usage of $C_\infty$ produces a biased estimator.
+The goal of this paper is to provide proper bias-correction factors $C_n$ for finite samples.
+
+When the median absolute deviation is based on the traditional sample median, these factors are known (see [@park2020]).
+However, the sample median is not the most statistically efficient way to estimate the true population median.
+As a more efficient alternative, we can use the Harrell-Davis quantile estimator (see [@harrell1982])
+  to calculate the median absolute deviation.
+This approach is more efficient than the classic sample median, but it is not robust.
+To achieve a trade-off between statistical efficiency and robustness,
+  we consider a trimmed modification of the Harrell-Davis quantile estimator (see [@akinshin2022]).
+The bias-correction factors depend not only on the sample size but also on the chosen median estimator.
+Therefore, if we want to use the mentioned quantile estimators, we need adjusted factor values.
+
+In this paper, we present finite-sample bias-correction factors for the median absolute deviation based on
+  the Harrell-Davis quantile estimator and its trimmed modifications.
+For $n=2$, we derive the exact factor value.
+For $3\leq n \leq 100$, we obtain factor values using Monte-Carlo simulations.
+For $n>100$, we provide a prediction equation using the least squares method.
+
+The suggested approach provides a robust estimator of the standard deviation
+  that is unbiased under normality and more efficient than the classic approach based on the sample median.
+
+The paper is organized as follows.
+In Section\ [2](#sec-preliminaries),
+  we introduce the preliminaries with the problem explanation, a historical overview, and relevant references.
+In Section\ [3](#sec-simulations), we perform a series of numerical simulations
+  to get the values of the bias-correction factors and analyze properties of the obtained estimators.
+In Section\ [4](#sec-cases),
+  we get the exact bias-correction factor value for $n=2$ and a prediction equation for $n>100$.
+In Section\ [5](#sec-summary), we summarize all the results.
+In Appendix\ [A](#sec-ref), we provide a reference R implementation of the presented unbiased estimators.
+
+\clearpage
+
+# Preliminaries {#sec-preliminaries}
+
+In this section, we provide the motivation for the present research, a historical overview of the subject,
+  relevant background and references.
+
+## Measures of statistical dispersion
+
+The most popular measure of statistical dispersion is the standard deviation.
+The classic equations for the standard deviation work great for samples from the normal distributions.
+Unfortunately, the real-life experimental data are often contaminated by outliers.
+The standard deviation is too sensitive to distribution tails and sample outliers
+  so that it can be easily corrupted by a single extreme value.
+For example, let us consider three density plots presented in Figure\ \@ref(fig:stddev1).
+
+```{r stddev1, fig.cap="Three density plots of close-to-normal distributions.", fig.height=5}
+figure.stddev1()
+```
+
+All three presented distributions look quite close to the normal one.
+However, their actual standard deviations are $\sigma_{U1} = 1$, $\sigma_{U2} = 11$, $\sigma_{U3} = 3$.
+The actual normal distributions with such standard deviations are presented in Figure\ \@ref(fig:stddev2).
+
+```{r stddev2, fig.cap="Normal distributions with various standard deviation values.", fig.height=5}
+figure.stddev2()
+```
+
+In fact, only the first distribution is the standard normal distribution $U1 = \mathcal{N}(0, 1^2)$.
+Two other distributions are contaminated normal distributions 
+  that are mixtures of two normal distributions (see [@wilcox2016]):
+  $U2 = 0.95\cdot\mathcal{N}(0, 1^2) + 0.05\cdot\mathcal{N}(0, 49^2)$,
+  $U3 = 0.9\cdot\mathcal{N}(0, 1^2) + 0.1\cdot\mathcal{N}(0, 9^2)$.
+The standard deviation is not a robust measure, its breakdown point is zero.
+If the data are contaminated, the standard deviation estimations can be misleading
+  because of the high sensitivity to outliers.
+
+In order to solve this problem, we may need a robust measure of the statistical dispersion.
+A widely used option is the *median absolute deviation*.
+One of the first mentions can be found in [@hampel1974] where it is attributed to Gauss.
+In [@rousseeuw1993], the median absolute deviation is introduced as a very robust scale estimator
+  because it has the best possible breakdown point (0.5).
+
+Let $X$ be a sample of i.i.d. random variables: $X = \{ X_1, X_2, \ldots X_n \}$.
+Here is the classic non-scaled definition of the median absolute deviation:
+
+$$
+\operatorname{MAD}_0(X) = \operatorname{median}(|X - \operatorname{median}(X)|).
+$$
+
+Let us assume that $X$ follows the standard normal distribution: $X \sim \mathcal{N}(0,1^2)$.
+If we want to make the median absolute deviation asymptotically consistent
+  with the standard deviation under the normal distribution
+  for an infinitely large sample,
+  we should define a modification of $\operatorname{MAD}_0$ with a bias-correction factor $C_\infty$:
+
+$$
+\operatorname{MAD}_\infty(X) = C_\infty \cdot \operatorname{median}(|X - \operatorname{median}(X)|) = C_\infty \cdot \operatorname{MAD}_0(X).
+$$
+
+Since we are building an unbiased estimator,
+  its asymptotic expected value $\lim_{n\to\infty}\mathbb{E}[\operatorname{MAD}_\infty(X)]$ should be equal to $1$.
+It gives us the following equation for $C_\infty$:
+
+$$
+C_\infty = \frac{1}{\lim_{n\to\infty}\mathbb{E}[\operatorname{MAD}_0(X)]}.
+$$
+
+Let us denote $\lim_{n\to\infty}\mathbb{E}[\operatorname{MAD}_0(|X|)]$ by $M_\infty$.
+Since the median of $\mathcal{N}(0,1^2)$ is zero, we have:
+
+$$
+M_\infty =
+  \lim_{n\to\infty}\mathbb{E}[\operatorname{median}(|X - \operatorname{median}(X))] = 
+  \lim_{n\to\infty}\mathbb{E}[\operatorname{median}(|X|)].
+$$
+
+Since $M_\infty$ is the expected value of the median of $|X|$, we can write
+
+$$
+\mathbb{P}(|X_1|<M_\infty) = 0.5,
+$$
+
+which is the same as
+
+$$
+\mathbb{P}(-M_\infty<X_1<M_\infty) = 0.5.
+$$
+
+Let us denote the cumulative distribution function of $\mathcal{N}(0, 1^2)$ by $\Phi$.
+Then, the probability of getting $X_1$ from the range $(-M_\infty;M_\infty)$
+  is $\Phi(M_\infty)-\Phi(-M_\infty)$.
+Thus,
+
+$$
+\Phi(M_\infty)-\Phi(-M_\infty) = 0.5.
+$$
+
+Since $\mathcal{N}(0, 1^2)$ is symmetric around zero, $\Phi(-M_\infty)=1-\Phi(M_\infty)$.
+Therefore
+
+$$
+\Phi(M_\infty) = 0.75.
+$$
+
+Assuming that $\Phi^{-1}$ is the quantile function of $\mathcal{N}(0, 1^2)$, we have:
+
+$$
+M_\infty = \Phi^{-1}(0.75) \approx 0.674489750196082.
+$$
+
+Finally,
+
+$$
+C_\infty =
+  \frac{1}{\lim_{n\to\infty}\mathbb{E}[\operatorname{MAD}_0(X)]} =
+  \dfrac{1}{M_\infty} =
+  \dfrac{1}{\Phi^{-1}(0.75)} \approx
+  1.4826022185056.
+$$\
+
+Now we consider a scaled median absolute deviation
+  that could be used as an unbiased standard deviation estimator under normality
+  for a finite sample of size $n$.
+Let us denote it by $\operatorname{MAD}_n$:
+
+$$
+\operatorname{MAD}_n(X) = C_n \cdot \operatorname{median}(|X - \operatorname{median}(X)|) = C_n \cdot \operatorname{MAD}_0(X).
+$$
+
+We cannot use $C_{\infty}$ as a bias-correction factor for finite samples because
+  it would make $\operatorname{MAD}_n$ a biased estimator of the standard deviation.
+To make it unbiased, we have to find proper values of $C_n$ for each sample size $n$.
+These values can be evaluated as
+
+$$
+C_n = \dfrac{1}{\mathbb{E}[\operatorname{MAD}_0(X)]} = \dfrac{1}{M_n},
+$$
+
+where $M_n = \mathbb{E}[\operatorname{MAD}_0(X)]$,
+  $X = \{ X_1, X_2, \ldots, X_n \}$.
+
+\clearpage
+
+## Bias-correction factors based on the sample median
+
+Traditionally, by $\operatorname{median}$ we assume the sample median
+  (if $n$ is odd, the median is the middle order statistic;
+   if $n$ is even, the median is the arithmetic average of the two middle order statistics).
+This approach is consistent with the Hyndman-Fan Type 7 quantile estimator (see [@hyndman1996])
+  which is the most popular traditional quantile estimator based on one or two order statistics
+  (it is used by default in R, Julia, NumPy, and Excel).
+To avoid confusion, let us denote the median estimator based on the sample median by $\operatorname{median}_{\operatorname{SM}}$.
+Similarly, we denote $\operatorname{MAD}$ based on $\operatorname{median}_{\operatorname{SM}}$ by $\operatorname{MAD}_{\operatorname{SM}}$.
+Let us briefly discuss existing approaches for picking $C_n$ values for $\operatorname{median}_{\operatorname{SM}}$.
+
+One of the first attempts to define $C_n$ was made in [@croux1992] by Christophe Croux and Peter J. Rousseeuw.
+They suggested using the following equations:
+
+$$
+C_n = \dfrac{b_n}{\Phi^{-1}(0.75)}.
+$$
+
+For $n \leq 9$, the approximated values of $b_n$ were defined as presented in Table\ \@ref(tab:croux).
+
+Table: (\#tab:croux) Original $b_n$ factors from the Croux-Rousseeuw approach.
+
+|    n | $b_n$ |
+| ---: | ----: |
+|    2 | 1.196 |
+|    3 | 1.495 |
+|    4 | 1.363 |
+|    5 | 1.206 |
+|    6 | 1.200 |
+|    7 | 1.140 |
+|    8 | 1.129 |
+|    9 | 1.107 |
+
+For $n > 9$, they suggested using the following equation:
+
+$$
+b_n = \dfrac{n}{n-0.8}.
+$$
+
+This approach was improved in [@williams2011] by Dennis C. Williams.
+Firstly, he provided updated $b_n$ values for $n \leq 9$ (see Table\ \@ref(tab:williams)).
+
+Table: (\#tab:williams) Williams version of $b_n$ factors from the Croux-Rousseeuw approach.
+
+|    n | $b_n$ |
+| ---: | ----: |
+|    2 | 1.197 |
+|    3 | 1.490 |
+|    4 | 1.360 |
+|    5 | 1.217 |
+|    6 | 1.189 |
+|    7 | 1.138 |
+|    8 | 1.127 |
+|    9 | 1.101 |
+
+Secondly, he introduced a small correction for $n > 9$:
+
+$$
+b_n = \dfrac{n}{n-0.801}.
+$$
+
+Thirdly, he discussed another kind of approximation for such kind of bias-correction factors:
+
+$$
+b_n \cong 1 + cn^{-d}.
+$$
+
+In his paper, he applied the above equation only to *Shorth*
+  (which is the smallest interval that contains at least half of the data points),
+  but this approach can also be applied to other measures of scale.
+
+Next, in [@hayes2014], Kevin Hayes suggested another kind of prediction equation for $n \geq 9$:
+
+$$
+C_n = \dfrac{1}{\hat{a}_n},
+$$
+
+where
+
+$$
+\hat{a}_n = \Phi^{-1}(0.75) \Bigg( 1 - \dfrac{\alpha}{n} - \dfrac{\beta}{n^2} \Bigg).
+$$
+
+The suggested values of $\alpha$ and $\beta$ are listed in Table\ \@ref(tab:hayes).
+
+Table: (\#tab:hayes) $\alpha$ and $\beta$ values from the Hayes approach.
+
+|    n | $\alpha$ | $\beta$ |
+| ---: | -------: | ------: |
+|  odd |   0.7635 |   0.565 |
+| even |   0.7612 |   1.123 |
+
+
+Finally, in [@park2020], Chanseok Park, Haewon Kim, and Min Wang aggregated all of the previous results.
+They used the following form of the main equation:
+
+$$
+C_n = \dfrac{1}{\Phi^{-1}(0.75) \cdot (1+A_n)}.
+$$
+
+For $n > 100$, they suggested two approaches.
+The first one is based on [@hayes2014] (the same equation for both odd and even $n$ values):
+
+$$
+A_n = -\dfrac{0.76213}{n} - \dfrac{0.86413}{n^2}.
+$$
+
+The second one is based on [@williams2011]:
+
+$$
+A_n = -0.804168866 \cdot n^{-1.008922}.
+$$
+
+Both approaches produce almost identical results, so it does not actually matter which one to use.
+
+For $2 \leq n \leq 100$, they suggested to use predefined constants listed in Table\ \@ref(tab:park)
+  (based on Table A2 from [@park2020]).
+The corresponding plot is presented in Figure \@ref(fig:parkPlot).
+
+```{r park}
+table.factors("park", "$C_n$ factors from the Park approach.")
+```
+
+```{r parkPlot, fig.cap="MAD bias-correction factors from the Park approach", fig.height=4}
+figure.park()
+```
+
+\clearpage
+
+## Alternative median estimators
+
+The described approach works quite well in practice for the sample median.
+This estimator is the most robust median estimator (its breakdown point is 0.5),
+  but it does not have the best possible statistical efficiency
+  since it is based only on one or two order statistics.
+Fortunately, there are other quantile estimators with better statistical efficiency.
+One of the most popular alternatives which evaluate the median
+  as a weighted sum of all order statistics is the Harrell-Davis quantile estimator (see [@harrell1982]).
+Let $Q(X, p)$ be an estimation of the $p^\textrm{th}$ quantile of the random sample $X$.
+The Harrell-Davis quantile estimator $Q_{\operatorname{HD}}(X, p)$ is defined as follows:
+  
+$$
+Q_{\operatorname{HD}}(X, p) = \sum_{i=1}^{n} W_{\operatorname{HD},i} \cdot X_{(i)},\quad
+W_{\operatorname{HD},i} = I_{i/n}(\alpha, \beta) - I_{(i-1)/n}(\alpha, \beta),
+$$
+
+where $I_v(\alpha, \beta)$ is the regularized incomplete beta function,
+  $\alpha = (n+1)p$, $\;\beta = (n+1)(1-p)$,
+  $X_{(i)}$ is the $i^\textrm{th}$ order statistic of $X$.
+
+The Harrell-Davis quantile estimator is suggested in
+  [@david2003], [@grissom2005], [@wilcox2016], and [@gibbons2020]
+  as an efficient alternative to the sample median.
+In [@yoshizawa1985] the Harrell-Davis median estimator is shown to be
+  asymptotically equivalent to the sample median.
+While $Q_{\operatorname{HD}}$ has great statistical efficiency,
+  it is not robust (its breakdown point is zero).
+In practice, we still can use $Q_{\operatorname{HD}}$ for medium-size outliers
+  without loss of accuracy because
+  the corresponding $W_{\operatorname{HD},i}$ coefficients are quite small.
+However, if a sample contains extreme outliers, $Q_{\operatorname{HD}}$ can be corrupted.
+Other examples of quantile estimators based on a weighted sum of all order statistics are
+  the Sfakianakis-Verginis quantile estimator (see [@sfakianakis2008]) and
+  the Navruz-Özdemir quantile estimator (see [@navruz2020]).
+However, we continue considering only the Harrell-Davis quantile estimator
+  because it is the most popular option in this family.
+
+In order to find an optimal trade-off between robustness and statistical efficiency,
+  we can consider the trimmed Harrell-Davis quantile estimator
+  based on the highest density interval of the given width that we denote by $Q_{\operatorname{THD}}$
+  (see [@akinshin2022]).
+In this modification of $Q_{\operatorname{HD}}$,
+  we perform summation only within the highest density interval $[L;R]$ of $\operatorname{Beta}(\alpha, \beta)$
+  of size $D$ (as a rule of thumb, we can use $D = 1 / \sqrt{n}$ which gives us an estimator $Q_{\operatorname{THD-SQRT}}$).
+It can be defined as follows:
+
+$$
+Q_{\operatorname{THD}}(X, p) = \sum_{i=1}^{n} W_{\operatorname{THD},i} \cdot X_{(i)}, \quad
+W_{\operatorname{THD},i} = F_{\operatorname{THD}}(i / n) - F_{\operatorname{THD}}((i - 1) / n),
+$$
+
+$$
+F_{\operatorname{THD}}(v) = \begin{cases}
+0 & \textrm{for }\, v < L,\\
+\big( I_v(\alpha, \beta) - I_L(\alpha, \beta) \big) /
+\big( I_R(\alpha, \beta) \big) - I_L(\alpha, \beta) \big) \big)
+  & \textrm{for }\, L \leq v \leq R,\\
+1 & \textrm{for }\, R < v.
+\end{cases}
+$$
+
+Quantile estimators $Q_{\operatorname{HD}}$ and $Q_{\operatorname{THD-SQRT}}$ can be also used as median estimators:
+  $\operatorname{median}_{\operatorname{HD}}(X) = Q_{\operatorname{HD}}(X, 0.5)$,
+  $\operatorname{median}_{\operatorname{THD-SQRT}}(X) = Q_{\operatorname{THD-SQRT}}(X, 0.5)$.
+Let us denote the median absolute deviation based on $Q_{\operatorname{HD}}$
+  by $\operatorname{MAD}_{\operatorname{HD}}$.
+Similarly, we denote the median absolute deviation based on $Q_{\operatorname{THD-SQRT}}$
+  by $\operatorname{MAD}_{\operatorname{THD-SQRT}}$.
+
+In this paper, we conduct several simulation studies that evaluate approximated $C_n$ values for
+  $\operatorname{MAD}_{\operatorname{SM}}$,
+  $\operatorname{MAD}_{\operatorname{THD}}$, and
+  $\operatorname{MAD}_{\operatorname{THD-SQRT}}$.
+
+\clearpage
+
+# Simulation study {#sec-simulations}
+
+In this section, we are going to perform several numerical simulations.
+In Simulation\ [1](#sim1), we get empirical values of the bias-correction factors $C_n$
+  for all considered $\operatorname{MAD}$ estimators.
+In Simulation\ [2](#sim2) and Simulation\ [3](#sim3), we perform an analysis of
+  statistical efficiency and sensitivity to outliers
+  of the obtained unbiased estimators.
+
+## Simulation 1: Evaluating bias-correction factors using the Monte-Carlo method {#sim1}
+
+Since $C_n = 1/\mathbb{E}[\operatorname{MAD}_0(X)]$, this value can be obtained
+  by estimating the expected value of $\operatorname{MAD}_0(X)$ using the Monte-Carlo method.
+We do it according to the following scheme:
+
+\begin{algorithm}[H]
+\ForEach{$\textit{median}_* \in \{ \operatorname{median}_{\operatorname{SM}},\, \operatorname{median}_{\operatorname{HD}},\, \operatorname{median}_{\operatorname{THD-SQRT}}\}$}{
+  \ForEach{$n \in \{ 2..100, \ldots, 3000 \}$}{
+  $\textit{repetitions} \gets \textbf{when} \,\{ n \leq 10 \to 10^9;\; n \leq 100 \to 5\cdot10^8;\; \textbf{else} \to 2\cdot10^8 \}$\\
+    \For{$i \gets 1..\textit{repetitions}$}{
+         $x \gets \textrm{GenerateRandomSample}(\textrm{Distribution} = \mathcal{N}(0, 1^2),\, \textrm{SampleSize} = n)$\\
+         $m_i \gets \textit{median}_*(|x-\textit{median}_*(x)|)$ 
+    }
+   $M_n \gets \sum m_i / \textit{repetitions}$\\
+   $C_n \gets 1 / M_n$
+  }
+}
+\end{algorithm}
+
+The estimated $C_n$ values for
+  $\operatorname{MAD}_{\operatorname{SM}}$, $\operatorname{MAD}_{\operatorname{HD}}$, $\operatorname{MAD}_{\operatorname{THD-SQRT}}$
+  are presented in Tables\ \@ref(tab:sm), \@ref(tab:hd), and \@ref(tab:thd-sqrt) respectively.
+A visualization for $2 \leq n \leq 100$ is shown in Figure \@ref(fig:factorPlot).
+The simulation for $\operatorname{MAD}_{\operatorname{SM}}$ replicates the study from [@park2020]
+  with a higher number of samples (they used $10^7$ random samples).
+The results of two studies (Tables\ \@ref(tab:park) and \@ref(tab:sm)) are quite close to each other
+  (the maximum observed absolute difference is $\approx `r format(inline.maxParkSmDiff(), scientific=FALSE)`$).
+
+```{r sm}
+table.factors("sm", "$C_n$ factors for $\\operatorname{MAD}_{\\operatorname{SM}}$.")
+```
+
+\clearpage
+
+```{r hd}
+table.factors("hd", "$C_n$ factors for $\\operatorname{MAD}_{\\operatorname{HD}}$.")
+```
+
+```{r thd-sqrt}
+table.factors("thd", "$C_n$ factors for $\\operatorname{MAD}_{\\operatorname{THD-SQRT}}$.")
+```
+
+\clearpage
+
+```{r factorPlot, fig.cap="Bias-correction factors using different median estimators.", fig.height=8.5}
+figure.factors()
+```
+
+\clearpage
+
+## Simulation 2: Statistical efficiency of the median absolute deviation {#sim2}
+
+In this simulation, we estimate the relative efficiency $e$ of
+  $\operatorname{MAD}_{\operatorname{HD}}$ and $\operatorname{MAD}_{\operatorname{THD-SQRT}}$
+  against $\operatorname{MAD}_{\operatorname{SM}}$ (the baseline).
+It can be calculated as the ratio of the estimator mean squared errors ($\operatorname{MSE}$) (see [@dekking2005]).
+Since all the estimators are unbiased under normality,
+  $\operatorname{MSE}(\operatorname{MAD}_*) = \mathbb{V}[\operatorname{MAD}_*]$.
+Thus, we have:
+
+$$
+e(\operatorname{MAD}_*) =
+  \dfrac{\operatorname{MSE}(\operatorname{MAD}_{\operatorname{SM}})}{\operatorname{MSE}(\operatorname{MAD}_*)} =
+  \dfrac{\mathbb{V}[\operatorname{MAD}_{\operatorname{SM}}(X)]}{\mathbb{V}[\operatorname{MAD}_*(X)]},
+$$
+
+where $\mathbb{V}$ is the variance of $\operatorname{MAD}_n$ for the given sample size $n$,
+  $\operatorname{MAD}_*$ is a placeholder for $\operatorname{MAD}_{\operatorname{HD}}$ and $\operatorname{MAD}_{\operatorname{THD-SQRT}}$.
+We conduct this simulation according to the following scheme:
+
+\begin{algorithm}[H]
+\ForEach{$n \in \{ 2, 3, 4, 5, 6, 7, 10, 50, 100, 500, 1000 \}$}{
+  \For{$i \gets 1..10\,000$}{
+    $x \gets \textrm{GenerateRandomSample}(\textrm{Distribution} = \mathcal{N}(0, 1^2),\, \textrm{SampleSize} = n)$\\
+    $m_{\operatorname{SM},i} = \operatorname{MAD}_{\operatorname{SM},n}(x)$\\
+    $m_{\operatorname{HD},i} = \operatorname{MAD}_{\operatorname{HD},n}(x)$\\
+    $m_{\operatorname{THD-SQRT},i} = \operatorname{MAD}_{\operatorname{THD-SQRT},n}(x)$\\
+  }
+  $e(\operatorname{MAD}_{\operatorname{HD},n}) = \mathbb{V}(m_{\operatorname{SM},\{i\}}) / \mathbb{V}(m_{\operatorname{HD},\{i\}})$\\
+  $e(\operatorname{MAD}_{\operatorname{THD-SQRT},n}) = \mathbb{V}(m_{\operatorname{SM},\{i\}}) / \mathbb{V}(m_{\operatorname{THD-SQRT},\{i\}})$\\
+}
+\end{algorithm}
+
+The evaluated values of the
+  $e(\operatorname{MAD}_{\operatorname{HD}})$ and $e(\operatorname{MAD}_{\operatorname{THD-SQRT}})$
+  are presented in Table\ \@ref(tab:effSummary).
+
+```{r effSummary}
+table.efficiency()
+```
+
+Based on the obtained measurements, we can do the following observations
+  about the efficiency of the considered $\operatorname{MAD}$ estimators
+  *under the normal distribution*:
+
+* Both $\operatorname{MAD}_{\operatorname{HD}}$ and $\operatorname{MAD}_{\operatorname{THD-SQRT}}$
+  are more efficient than $\operatorname{MAD}_{\operatorname{SM}}$.
+* $\operatorname{MAD}_{\operatorname{HD}}$ is more efficient than $\operatorname{MAD}_{\operatorname{THD-SQRT}}$.
+* The impact of using $\operatorname{MAD}_{\operatorname{HD}}$ and $\operatorname{MAD}_{\operatorname{THD-SQRT}}$
+    instead of $\operatorname{MAD}_{\operatorname{SM}}$
+    is most noticeable for small samples
+    (except $n=2$ for $\operatorname{MAD}_{\operatorname{HD}}$ and
+     $n \in \{ 2,4 \}$ for $\operatorname{MAD}_{\operatorname{THD-SQRT}}$).
+  The most impressive boost of efficiency can be observed for $n=3$:
+    $`r inline.efficiency("hd", 3)`$ for $\operatorname{MAD}_{\operatorname{HD}}$  and
+    $`r inline.efficiency("thd", 3)`$ for $\operatorname{MAD}_{\operatorname{THD-SQRT}}$.
+* For large samples, $\operatorname{MAD}_{\operatorname{HD}}$ and $\operatorname{MAD}_{\operatorname{THD-SQRT}}$
+    are still more efficient than $\operatorname{MAD}_{\operatorname{SM}}$,
+    but the difference is not so noticeable.
+  For example, for $n=1000$,
+    $\operatorname{MAD}_{\operatorname{HD}}$ gives $`r inline.efficiency("hd", 1000)`$ and
+    $\operatorname{MAD}_{\operatorname{THD-SQRT}}$ gives $`r inline.efficiency("thd", 1000)`$ to statistical efficiency.
+
+\clearpage
+
+## Simulation 3: Sensitivity to outliers of the median absolute deviation {#sim3}
+
+There are various metrics that describe robustness
+  (e.g., the breakdown point, the influence function, and the sensitivity curve).
+While these metrics provide important theoretical properties,
+  they do not present a clear visual illustration
+  of the actual impact of outliers on estimations.
+Another approach to getting an idea of the sensitivity of different estimators to outliers
+  is exploring the statistical dispersion of obtained estimations on light-tailed and heavy-tailed distributions.
+Let us conduct a simulation according to the following scheme:
+
+\begin{algorithm}[H]
+\ForEach{$d \in \mathcal{D}$}{
+\ForEach{$n \in \{ 2, 3, 4, 5, 6, 7, 8, 9, 10, 50, 100, 500, 1000 \}$}{
+  \For{$i \gets 1..1\,000$}{
+     $x \gets \textrm{GenerateRandomSample}(\textrm{Distribution} = d,\, \textrm{SampleSize} = n)$\\
+     \ForEach{$\textit{estimator} \in \{ \operatorname{SM}, \operatorname{HD}, \operatorname{THD-SQRT} \} $}{
+        $m_{\textit{estimator},i} = \operatorname{MAD}_{\textit{estimator},n}(x)$\\
+     }
+  }
+  \ForEach{$\textit{aggregator} \in \{ \operatorname{SD}, \operatorname{IQR}, \operatorname{MAD}_{\operatorname{SM}} \}$}{
+    $\operatorname{Result}(d, n, \textit{estimator}, \textit{aggregator}) = \textit{aggregator}(m_{\textit{estimator},\{i\}})$
+  }
+}
+}	
+\end{algorithm}
+
+In this simulation, we enumerate a set $\mathcal{D}$ of distributions listed in Table \@ref(tab:ds)
+  (this set includes symmetric and skewed, light-tailed and heavy-tailed distributions).
+We describe the statistical dispersion of each set of $\operatorname{MAD}_n$ estimations in three different ways:
+  $\operatorname{SD}$ (the classic standard deviation),
+  $\operatorname{IQR}$ (interquartile range based on Hyndman-Fan Type 7 quantile estimator),
+  $\operatorname{MAD}_{\operatorname{SM}}$.
+The aggregated results for $n \in \{ 5, 6, 10, 50 \}$ are listed
+  in Tables\ \@ref(tab:robust5), \@ref(tab:robust6),\@ref(tab:robust10), \@ref(tab:robust50) respectively.
+The $\operatorname{MAD}_{\operatorname{SM}}$-aggregated results for all values of $n$ are presented in Figure\ \@ref(fig:robust).
+Based on the obtained measurements, we can make the following observations:
+
+* For the light-tailed distributions,
+  $\operatorname{MAD}_{\operatorname{HD}}$ has the best robustness,
+  $\operatorname{MAD}_{\operatorname{SM}}$ has the worst robustness.
+* For the heavy-tailed distributions, the opposite is true:
+  $\operatorname{MAD}_{\operatorname{HD}}$ has the worst robustness,
+  $\operatorname{MAD}_{\operatorname{SM}}$ has the best robustness.
+  On small samples,
+    $\operatorname{MAD}_{\operatorname{HD}}$ could be much worse than $\operatorname{MAD}_{\operatorname{SM}}$
+    while $\operatorname{MAD}_{\operatorname{THD-SQRT}}$ is just a little bit worse.
+* For $n \geq 50$, the difference between all considered estimators is negligible.
+
+Table: (\#tab:ds) Distributions for Simulation\ [3](#sim3).
+
+| Distribution                | Support             | Skewness     | Tailness     |
+|:----------------------------|:--------------------|:-------------|:-------------|
+| Uniform(a=0, b=1)           | $[0;1]$             | Symmetric    | Light-tailed |
+| Triangular(a=0, b=2, c=1)   | $[0;2]$             | Symmetric    | Light-tailed |
+| Triangular(a=0, b=2, c=0.2) | $[0;2]$             | Right-skewed | Light-tailed |
+| Beta(a=2, b=4)              | $[0;1]$             | Right-skewed | Light-tailed |
+| Beta(a=2, b=10)             | $[0;1]$             | Right-skewed | Light-tailed |
+| Normal(m=0, sd=1)           | $(-\infty;+\infty)$ | Symmetric    | Light-tailed |
+| Weibull(scale=1, shape=2)   | $[0;+\infty)$       | Right-skewed | Light-tailed |
+| Student(df=3)               | $(-\infty;+\infty)$ | Symmetric    | Light-tailed |
+| Gumbel(loc=0, scale=1)      | $(-\infty;+\infty)$ | Right-skewed | Light-tailed |
+| Exp(rate=1)                 | $[0;+\infty)$       | Right-skewed | Light-tailed |
+| Cauchy(x0=0, gamma=1)       | $(-\infty;+\infty)$ | Symmetric    | Heavy-tailed |
+| Pareto(loc=1, shape=0.5)    | $[1;+\infty)$       | Right-skewed | Heavy-tailed |
+| Pareto(loc=1, shape=2)      | $[1;+\infty)$       | Right-skewed | Heavy-tailed |
+| LogNormal(mlog=0, sdlog=1)  | $(0;+\infty)$       | Right-skewed | Heavy-tailed |
+| LogNormal(mlog=0, sdlog=2)  | $(0;+\infty)$       | Right-skewed | Heavy-tailed |
+| LogNormal(mlog=0, sdlog=3)  | $(0;+\infty)$       | Right-skewed | Heavy-tailed |
+| Weibull(shape=0.3)          | $[0;+\infty)$       | Right-skewed | Heavy-tailed |
+| Weibull(shape=0.5)          | $[0;+\infty)$       | Right-skewed | Heavy-tailed |
+| Frechet(shape=1)            | $(0;+\infty)$       | Right-skewed | Heavy-tailed |
+| Frechet(shape=3)            | $(0;+\infty)$       | Right-skewed | Heavy-tailed |
+
+\clearpage
+
+```{r robust5}
+table.sensitivity(5)
+```
+
+```{r robust6}
+table.sensitivity(6)
+```
+
+\clearpage
+
+```{r robust10}
+table.sensitivity(10)
+```
+
+```{r robust50}
+table.sensitivity(50)
+```
+
+\clearpage
+
+```{r robust, fig.cap="Statistical dispersion of MAD estimations on various distributions.", fig.height=8.5}
+figure.sensitivity()
+```
+
+\clearpage
+
+# Special cases of bias-correction factors {#sec-cases}
+
+In this section, we consider two following cases:
+
+* $n=2$: it is the only case when we can easily calculate the exact value of the bias correction factor.
+* $n>100$: for this case, we draw a generic equation following the approach from [@hayes2014].
+
+## Bias-correction factors for n = 2
+
+Let $X = \{ X_1, X_2 \}$ be a sample of two i.i.d. random variables
+  from the standard normal distribution $\mathcal{N}(0, 1^2)$.
+Regardless of the chosen median estimator, the median is unequivocally determined:
+
+$$
+\operatorname{median}(X) = \dfrac{X_1 + X_2}{2}.
+$$
+
+Now we calculate the median absolute deviation $\operatorname{MAD}_0$:
+
+$$
+\begin{split}
+\operatorname{MAD}_0(X)
+  & = \operatorname{median}(|X - \operatorname{median}(X)|) = \\
+  & = \operatorname{median}(\{ \, |X_1 - (X_1 + X_2)/2|\,,\, |X_2 - (X_1 + X_2)/2|\, \}) = \\
+  & = \operatorname{median}(\{ \, |(X_1 - X_2)/2|\,,\, |(X_2 - X_1)/2| \,\}) = \\
+  & = |X_1 - X_2|/2.
+\end{split}
+$$
+
+Since $X_1, X_2 \sim \mathcal{N}(0, 1^2)$ which is symmetric,
+  $|X_1 - X_2|/2$ is distributed the same way as $|X_1 + X_2|/2$.
+Let us denote the sum of two standard normal distributions by $Z = X_1 + X_2$.
+It gives us another normal distribution with modified variance:
+
+$$
+Z \sim \mathcal{N}(0, \sqrt{2}^2).
+$$
+
+Since we take the absolute value of $Z$, we get the half-normal distribution.
+The expected value of a half-normal distribution which is formed from the normal distribution $\mathcal{N}(0, \sigma^2)$
+  is $\sigma \sqrt{2/\pi}$.
+Thus,
+
+$$
+\mathbb{E}[|Z|] = \sqrt{2} \sqrt{2/\pi} = 2/\sqrt{\pi}.
+$$
+
+Finally, we have:
+
+$$
+\mathbb{E}[\operatorname{MAD}_0(X)]
+  = \mathbb{E}\Bigg[ \frac{|X_1 - X_2|}{2} \Bigg]
+  = \mathbb{E}\Bigg[ \frac{|X_1 + X_2|}{2} \Bigg]
+  = \mathbb{E}\Bigg[ \frac{|Z|}{2} \Bigg]
+  = \frac{2/\sqrt{\pi}}{2} = \frac{1}{\sqrt{\pi}}.
+$$
+
+The bias-correction factor $C_2$ is the reciprocal value of the expected value of $\operatorname{MAD}_0(X)$:
+
+$$
+C_2 = \frac{1}{\mathbb{E}[\operatorname{MAD}_0(X)]} = \sqrt{\pi} \approx 1.77245385090552.
+$$
+
+\clearpage
+
+## Bias-correction factors for n > 100
+
+Following the approach from [@hayes2014], we are going to draw a generic equation for $C_n$ in the following form:
+
+$$
+C_n = \dfrac{1}{\Phi^{-1}(0.75) \cdot (1+A_n)}, \quad A_n = \dfrac{\alpha}{n} + \dfrac{\beta}{n^2}.
+$$
+
+The coefficients $\alpha$ and $\beta$ can be obtained using least squares
+  on the values from Tables\ \@ref(tab:park)
+  (let us denote $\operatorname{MAD}$ based on this table by $\operatorname{MAD}_{\operatorname{PARK}}$),
+  \@ref(tab:sm), \@ref(tab:hd), and \@ref(tab:thd-sqrt) for $100 < n \leq 500$.
+The results are presented in Table\ \@ref(tab:ab).
+
+```{r ab}
+table.ab()
+```
+
+The value of $\alpha$ for $\operatorname{MAD}_{\operatorname{PARK}}$ and $\operatorname{MAD}_{\operatorname{SM}}$
+  are quite close to the suggested $\alpha=-0.76213$ from [@park2020].
+The corresponding value of $\beta$ is not so close to $\beta=-0.86413$ from [@park2020],
+  but this difference does not produce a noticeable impact on the final result.
+
+The evaluated values of $\alpha$ and $\beta$ for all $\operatorname{MAD}$ estimators look quite accurate.
+In Figure\ \@ref(fig:n100), we can see the actual (points) and predicted (line) values of $C_n$ for $100 < n \leq 3000$.
+Within values $500 < n \leq 3000$ from Tables\ \@ref(tab:sm), \@ref(tab:hd), and \@ref(tab:thd-sqrt)
+  (that were not used to get the values of $\alpha$ and $\beta$),
+  the maximum observed absolute difference between the actual and predicted values
+  is $\approx `r format(inline.n100Diff(), scientific=FALSE)`$.
+
+```{r n100, fig.cap="Actual and predicted bias-correction factors", fig.height=4}
+figure.n100()
+```
+
+\clearpage
+
+# Summary {#sec-summary}
+
+The median absolute deviation is a robust measure of statistical dispersion
+  that can be used as a consistent estimator for the standard deviation
+  under the normal distribution.
+To make it unbiased, we have to use a bias-correction factor $C_n$:
+
+$$
+\operatorname{MAD}_n(X) = C_n \cdot \operatorname{median}(|X-\operatorname{median}(X)|).
+$$
+
+This approach heavily depends on the chosen median estimator.
+In this paper, we have discussed three estimators:
+  the classic sample median ($\operatorname{median}_{\operatorname{SM}}$),
+  the Harrell-Davis quantile estimator ($\operatorname{median}_{\operatorname{HD}}$),
+  and the trimmed Harrell-Davis quantile estimator
+  based on the highest density interval of the width $1/\sqrt{n}$ ($\operatorname{median}_{\operatorname{THD-SQRT}}$)
+  which give us estimators
+  $\operatorname{MAD}_{\operatorname{SM}}$ and $\operatorname{MAD}_{\operatorname{HD}}$,
+  and $\operatorname{MAD}_{\operatorname{THD-SQRT}}$ respectively.
+
+In Simulation\ [1](#sim1), we estimated values of $C_n$ using the Monte-Carlo simulation for each estimator.
+These values are listed in Tables\ \@ref(tab:sm), \@ref(tab:hd), and \@ref(tab:thd-sqrt).
+These tables cover all values of $n$ from $2$ to $100$ and some greater values up to $3000$.
+A generic approach for large sample sizes ($n > 100$) can be presented in the following form:
+
+$$
+C_n = \dfrac{1}{\Phi^{-1}(0.75) \cdot (1+\alpha/n + \beta/n^2)},
+$$
+
+where the values of $\alpha$ and $\beta$ are listed in Table \@ref(tab:ab).
+For $n=2$, we know the exact value of the bias-correction factor:
+  $C_2 = \sqrt{\pi} \approx 1.77245385090552$.
+
+In Simulation\ [2](#sim2), we evaluated the relative statistical efficiency of
+  $\operatorname{MAD}_{\operatorname{HD}}$ and $\operatorname{MAD}_{\operatorname{THD-SQRT}}$
+  against $\operatorname{MAD}_{\operatorname{SM}}$.
+It turned out that the efficiency of
+  $\operatorname{MAD}_{\operatorname{HD}}$ and $\operatorname{MAD}_{\operatorname{THD-SQRT}}$
+  are noticeably higher than the efficiency of $\operatorname{MAD}_{\operatorname{SM}}$.
+
+In Simulation\ [3](#sim3), we investigated the sensitivity to outliers of all $\operatorname{MAD}$ estimators.
+It turned out that $\operatorname{MAD}_{\operatorname{HD}}$ could be corrupted by extreme outliers
+  in the case of heavy-tailed distributions.
+Meanwhile, $\operatorname{MAD}_{\operatorname{THD-SQRT}}$ is much more resistant to outliers
+  (while it is still not as robust as $\operatorname{MAD}_{\operatorname{SM}}$).
+
+Thus, in the case of light-tailed distributions,
+  we recommend $\operatorname{MAD}_{\operatorname{HD}}$ as an alternative
+  to the classic $\operatorname{MAD}_{\operatorname{SM}}$
+  because it has higher statistical efficiency.
+In the case of heavy-tailed distributions,
+  we recommend $\operatorname{MAD}_{\operatorname{THD-SQRT}}$
+  because it allows achieving a good trade-off between statistical efficiency and robustness.
+The practical impact of both approaches is most noticeable for samples with a small number of elements.
+
+The trade-off between the statistical efficiency and the robustness
+  can be customized by choosing another width of the Beta distribution's highest density interval
+  in $\operatorname{MAD}_{\operatorname{THD}}$.
+The exact value of this width should be carefully chosen based on
+  the knowledge of the considered distribution,
+  the expected number and the magnitude of possible outliers,
+  and the robustness requirements.
+The values of the bias-correction factors $C_n$ should be properly updated
+  using another Monte-Carlo simulation study similar to Simulation [1](#sim1).
+
+# Disclosure statement {-}
+
+The author reports there are no competing interests to declare.
+
+# Data and source code availability {-}
+
+The source code of this paper, the source code of all simulations,
+  and the simulation results are available on GitHub:
+  [https://github.com/AndreyAkinshin/paper-mad-factors](https://github.com/AndreyAkinshin/paper-mad-factors).
+
+# Acknowledgments {-}
+
+The author thanks Ivan Pashchenko for valuable discussions.
+
+\clearpage
+
+# A\ \ Reference implementation {- #sec-ref}
+
+Here is an R implementation of the suggested $\operatorname{MAD}$ estimators:
+
+```{r, file="reference-implementation.R", echo=TRUE}
+```
+
+\newpage

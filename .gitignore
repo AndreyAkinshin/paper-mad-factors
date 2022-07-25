@@ -1,0 +1,14 @@
+.RData
+.Rhistory
+.Rproj.user
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.pdf
+*.tex
+*.bcf
+!preamble.tex
+_references
+temp*
