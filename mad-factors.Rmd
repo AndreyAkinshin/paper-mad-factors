@@ -407,7 +407,7 @@ $$
 F_{\operatorname{THD}}(v) = \begin{cases}
 0 & \textrm{for }\, v < L,\\
 \big( I_v(\alpha, \beta) - I_L(\alpha, \beta) \big) /
-\big( I_R(\alpha, \beta) \big) - I_L(\alpha, \beta) \big) \big)
+\big( I_R(\alpha, \beta) - I_L(\alpha, \beta) \big)
   & \textrm{for }\, L \leq v \leq R,\\
 1 & \textrm{for }\, R < v.
 \end{cases}
