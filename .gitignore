@@ -12,3 +12,5 @@
 !preamble.tex
 _references
 temp*
+*.knit.md
+*.run.xml

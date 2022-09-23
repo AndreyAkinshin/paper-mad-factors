@@ -1,5 +1,5 @@
 ---
-title: Finite-sample bias-correction factors for the median absolute deviation based on the Harrell-Davis quantile estimator and its trimmed modification
+title: Finite-sample bias-correction factors for the median absolute deviation based on the Harrell--Davis quantile estimator and its trimmed modification
 author: |
   Andrey Akinshin  
   Huawei Research, andrey.akinshin@gmail.com
@@ -11,15 +11,21 @@ abstract: |
   When we use the traditional sample median, the factor values are well known,
     but this approach does not provide optimal statistical efficiency.
   In this paper, we present the bias-correction factors for the median absolute deviation
-    based on the Harrell-Davis quantile estimator and its trimmed modification
+    based on the Harrell--Davis quantile estimator and its trimmed modification
     which allow us to achieve better statistical efficiency of the standard deviation estimations.
   The obtained estimators are especially useful for samples with a small number of elements.
 
-  **Keywords:** median absolute deviation, bias correction, Harrell-Davis quantile estimator, robustness.
+  **Keywords:** median absolute deviation, bias correction, Harrell--Davis quantile estimator, robustness.
+author-meta: Andrey Akinshin
+lang: en-US
 bibliography: references.bib
 biblio-style: alphabetic
-biblatexoptions: [sorting=nty]
+biblatexoptions: [sorting=anyt]
 link-citations: true
+colorlinks: true
+linkcolor: linkcolor
+citecolor: citecolor
+urlcolor: urlcolor
 output:
   bookdown::pdf_document2:
     citation_package: biblatex
@@ -50,18 +56,18 @@ The goal of this paper is to provide proper bias-correction factors $C_n$ for fi
 
 When the median absolute deviation is based on the traditional sample median, these factors are known (see [@park2020]).
 However, the sample median is not the most statistically efficient way to estimate the true population median.
-As a more efficient alternative, we can use the Harrell-Davis quantile estimator (see [@harrell1982])
+As a more efficient alternative, we can use the Harrell--Davis quantile estimator (see [@harrell1982])
   to calculate the median absolute deviation.
 This approach is more efficient than the classic sample median, but it is not robust.
 To achieve a trade-off between statistical efficiency and robustness,
-  we consider a trimmed modification of the Harrell-Davis quantile estimator (see [@akinshin2022]).
+  we consider a trimmed modification of the Harrell--Davis quantile estimator (see [@akinshin2022]).
 The bias-correction factors depend not only on the sample size but also on the chosen median estimator.
 Therefore, if we want to use the mentioned quantile estimators, we need adjusted factor values.
 
 In this paper, we present finite-sample bias-correction factors for the median absolute deviation based on
-  the Harrell-Davis quantile estimator and its trimmed modifications.
+  the Harrell--Davis quantile estimator and its trimmed modifications.
 For $n=2$, we derive the exact factor value.
-For $3\leq n \leq 100$, we obtain factor values using Monte-Carlo simulations.
+For $3\leq n \leq 100$, we obtain factor values using Monte--Carlo simulations.
 For $n>100$, we provide a prediction equation using the least squares method.
 
 The suggested approach provides a robust estimator of the standard deviation
@@ -110,7 +116,7 @@ Two other distributions are contaminated normal distributions
   that are mixtures of two normal distributions (see [@wilcox2016]):
   $U2 = 0.95\cdot\mathcal{N}(0, 1^2) + 0.05\cdot\mathcal{N}(0, 49^2)$,
   $U3 = 0.9\cdot\mathcal{N}(0, 1^2) + 0.1\cdot\mathcal{N}(0, 9^2)$.
-The standard deviation is not a robust measure, its breakdown point is zero.
+The standard deviation is not a robust measure: its breakdown point is zero.
 If the data are contaminated, the standard deviation estimations can be misleading
   because of the high sensitivity to outliers.
 
@@ -120,7 +126,7 @@ One of the first mentions can be found in [@hampel1974] where it is attributed t
 In [@rousseeuw1993], the median absolute deviation is introduced as a very robust scale estimator
   because it has the best possible breakdown point (0.5).
 
-Let $X$ be a sample of i.i.d. random variables: $X = \{ X_1, X_2, \ldots X_n \}$.
+Let $X$ be a sample of i.i.d. random variables: $X = \{ X_1, X_2, \ldots, X_n \}$.
 Here is the classic non-scaled definition of the median absolute deviation:
 
 $$
@@ -226,7 +232,7 @@ where $M_n = \mathbb{E}[\operatorname{MAD}_0(X)]$,
 Traditionally, by $\operatorname{median}$ we assume the sample median
   (if $n$ is odd, the median is the middle order statistic;
    if $n$ is even, the median is the arithmetic average of the two middle order statistics).
-This approach is consistent with the Hyndman-Fan Type 7 quantile estimator (see [@hyndman1996])
+This approach is consistent with the Hyndman--Fan Type 7 quantile estimator (see [@hyndman1996])
   which is the most popular traditional quantile estimator based on one or two order statistics
   (it is used by default in R, Julia, NumPy, and Excel).
 To avoid confusion, let us denote the median estimator based on the sample median by $\operatorname{median}_{\operatorname{SM}}$.
@@ -242,7 +248,7 @@ $$
 
 For $n \leq 9$, the approximated values of $b_n$ were defined as presented in Table\ \@ref(tab:croux).
 
-Table: (\#tab:croux) Original $b_n$ factors from the Croux-Rousseeuw approach.
+Table: (\#tab:croux) Original $b_n$ factors from the Croux--Rousseeuw approach.
 
 |    n | $b_n$ |
 | ---: | ----: |
@@ -264,7 +270,7 @@ $$
 This approach was improved in [@williams2011] by Dennis C. Williams.
 Firstly, he provided updated $b_n$ values for $n \leq 9$ (see Table\ \@ref(tab:williams)).
 
-Table: (\#tab:williams) Williams version of $b_n$ factors from the Croux-Rousseeuw approach.
+Table: (\#tab:williams) Williams version of $b_n$ factors from the Croux--Rousseeuw approach.
 
 |    n | $b_n$ |
 | ---: | ----: |
@@ -359,9 +365,9 @@ This estimator is the most robust median estimator (its breakdown point is 0.5),
   since it is based only on one or two order statistics.
 Fortunately, there are other quantile estimators with better statistical efficiency.
 One of the most popular alternatives which evaluate the median
-  as a weighted sum of all order statistics is the Harrell-Davis quantile estimator (see [@harrell1982]).
+  as a weighted sum of all order statistics is the Harrell--Davis quantile estimator (see [@harrell1982]).
 Let $Q(X, p)$ be an estimation of the $p^\textrm{th}$ quantile of the random sample $X$.
-The Harrell-Davis quantile estimator $Q_{\operatorname{HD}}(X, p)$ is defined as follows:
+The Harrell--Davis quantile estimator $Q_{\operatorname{HD}}(X, p)$ is defined as follows:
   
 $$
 Q_{\operatorname{HD}}(X, p) = \sum_{i=1}^{n} W_{\operatorname{HD},i} \cdot X_{(i)},\quad
@@ -372,10 +378,10 @@ where $I_v(\alpha, \beta)$ is the regularized incomplete beta function,
   $\alpha = (n+1)p$, $\;\beta = (n+1)(1-p)$,
   $X_{(i)}$ is the $i^\textrm{th}$ order statistic of $X$.
 
-The Harrell-Davis quantile estimator is suggested in
+The Harrell--Davis quantile estimator is suggested in
   [@david2003], [@grissom2005], [@wilcox2016], and [@gibbons2020]
   as an efficient alternative to the sample median.
-In [@yoshizawa1985] the Harrell-Davis median estimator is shown to be
+In [@yoshizawa1985] the Harrell--Davis median estimator is shown to be
   asymptotically equivalent to the sample median.
 While $Q_{\operatorname{HD}}$ has great statistical efficiency,
   it is not robust (its breakdown point is zero).
@@ -384,13 +390,13 @@ In practice, we still can use $Q_{\operatorname{HD}}$ for medium-size outliers
   the corresponding $W_{\operatorname{HD},i}$ coefficients are quite small.
 However, if a sample contains extreme outliers, $Q_{\operatorname{HD}}$ can be corrupted.
 Other examples of quantile estimators based on a weighted sum of all order statistics are
-  the Sfakianakis-Verginis quantile estimator (see [@sfakianakis2008]) and
-  the Navruz-Özdemir quantile estimator (see [@navruz2020]).
-However, we continue considering only the Harrell-Davis quantile estimator
+  the Sfakianakis--Verginis quantile estimator (see [@sfakianakis2008]) and
+  the Navruz--Özdemir quantile estimator (see [@navruz2020]).
+However, we continue considering only the Harrell--Davis quantile estimator
   because it is the most popular option in this family.
 
 In order to find an optimal trade-off between robustness and statistical efficiency,
-  we can consider the trimmed Harrell-Davis quantile estimator
+  we can consider the trimmed Harrell--Davis quantile estimator
   based on the highest density interval of the given width that we denote by $Q_{\operatorname{THD}}$
   (see [@akinshin2022]).
 In this modification of $Q_{\operatorname{HD}}$,
@@ -407,7 +413,7 @@ $$
 F_{\operatorname{THD}}(v) = \begin{cases}
 0 & \textrm{for }\, v < L,\\
 \big( I_v(\alpha, \beta) - I_L(\alpha, \beta) \big) /
-\big( I_R(\alpha, \beta) \big) - I_L(\alpha, \beta) \big) \big)
+\big( I_R(\alpha, \beta) - I_L(\alpha, \beta) \big)
   & \textrm{for }\, L \leq v \leq R,\\
 1 & \textrm{for }\, R < v.
 \end{cases}
@@ -437,10 +443,10 @@ In Simulation\ [2](#sim2) and Simulation\ [3](#sim3), we perform an analysis of
   statistical efficiency and sensitivity to outliers
   of the obtained unbiased estimators.
 
-## Simulation 1: Evaluating bias-correction factors using the Monte-Carlo method {#sim1}
+## Simulation 1: Evaluating bias-correction factors using the Monte--Carlo method {#sim1}
 
 Since $C_n = 1/\mathbb{E}[\operatorname{MAD}_0(X)]$, this value can be obtained
-  by estimating the expected value of $\operatorname{MAD}_0(X)$ using the Monte-Carlo method.
+  by estimating the expected value of $\operatorname{MAD}_0(X)$ using the Monte--Carlo method.
 We do it according to the following scheme:
 
 \begin{algorithm}[H]
@@ -584,7 +590,7 @@ In this simulation, we enumerate a set $\mathcal{D}$ of distributions listed in 
   (this set includes symmetric and skewed, light-tailed and heavy-tailed distributions).
 We describe the statistical dispersion of each set of $\operatorname{MAD}_n$ estimations in three different ways:
   $\operatorname{SD}$ (the classic standard deviation),
-  $\operatorname{IQR}$ (interquartile range based on Hyndman-Fan Type 7 quantile estimator),
+  $\operatorname{IQR}$ (interquartile range based on Hyndman--Fan Type 7 quantile estimator),
   $\operatorname{MAD}_{\operatorname{SM}}$.
 The aggregated results for $n \in \{ 5, 6, 10, 50 \}$ are listed
   in Tables\ \@ref(tab:robust5), \@ref(tab:robust6),\@ref(tab:robust10), \@ref(tab:robust50) respectively.
@@ -770,14 +776,14 @@ $$
 This approach heavily depends on the chosen median estimator.
 In this paper, we have discussed three estimators:
   the classic sample median ($\operatorname{median}_{\operatorname{SM}}$),
-  the Harrell-Davis quantile estimator ($\operatorname{median}_{\operatorname{HD}}$),
-  and the trimmed Harrell-Davis quantile estimator
+  the Harrell--Davis quantile estimator ($\operatorname{median}_{\operatorname{HD}}$),
+  and the trimmed Harrell--Davis quantile estimator
   based on the highest density interval of the width $1/\sqrt{n}$ ($\operatorname{median}_{\operatorname{THD-SQRT}}$)
   which give us estimators
   $\operatorname{MAD}_{\operatorname{SM}}$ and $\operatorname{MAD}_{\operatorname{HD}}$,
   and $\operatorname{MAD}_{\operatorname{THD-SQRT}}$ respectively.
 
-In Simulation\ [1](#sim1), we estimated values of $C_n$ using the Monte-Carlo simulation for each estimator.
+In Simulation\ [1](#sim1), we estimated values of $C_n$ using the Monte--Carlo simulation for each estimator.
 These values are listed in Tables\ \@ref(tab:sm), \@ref(tab:hd), and \@ref(tab:thd-sqrt).
 These tables cover all values of $n$ from $2$ to $100$ and some greater values up to $3000$.
 A generic approach for large sample sizes ($n > 100$) can be presented in the following form:
@@ -820,7 +826,7 @@ The exact value of this width should be carefully chosen based on
   the expected number and the magnitude of possible outliers,
   and the robustness requirements.
 The values of the bias-correction factors $C_n$ should be properly updated
-  using another Monte-Carlo simulation study similar to Simulation [1](#sim1).
+  using another Monte--Carlo simulation study similar to Simulation [1](#sim1).
 
 # Disclosure statement {-}
 
